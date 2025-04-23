@@ -4,14 +4,13 @@ const fetch = require("node-fetch");
 const API_KEY = process.env.TWOCAPTCHA_API_KEY;
 
 module.exports = async (req, res) => {
-  // ✅ Add CORS headers
+  // Always set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // ✅ Handle preflight request
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    return res.status(200).end(); // Respond to preflight
   }
 
   if (req.method !== "POST") {
@@ -55,9 +54,9 @@ module.exports = async (req, res) => {
       }
     }
 
-    res.status(408).json({ error: "Captcha solve timeout" });
+    return res.status(408).json({ error: "Captcha solve timeout" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error solving CAPTCHA:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
