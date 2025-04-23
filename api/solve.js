@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 const API_KEY = process.env.TWOCAPTCHA_API_KEY;
 
 module.exports = async (req, res) => {
-  // CORS Headers
+  // Always set CORS headers
   const allowedOrigins = ["https://smartapply.indeed.com"];
   if (allowedOrigins.includes(req.headers.origin)) {
     res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Credentials", "true");
 
   if (req.method === "OPTIONS") {
-    return res.status(200).end(); // Preflight
+    return res.status(200).end(); // Respond to preflight
   }
 
   if (req.method !== "POST") {
@@ -24,12 +24,7 @@ module.exports = async (req, res) => {
 
   const { sitekey, pageUrl } = req.body;
 
-  if (!sitekey || !pageUrl) {
-    return res.status(400).json({ error: "Missing sitekey or pageUrl" });
-  }
-
   try {
-    // Step 1: Submit CAPTCHA task
     const formData = new URLSearchParams({
       key: API_KEY,
       method: "userrecaptcha",
@@ -49,8 +44,6 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: "Failed to submit captcha" });
 
     const captchaId = submitData.request;
-
-    // Step 2: Poll for result
     const resultUrl = `https://2captcha.com/res.php?key=${API_KEY}&action=get&id=${captchaId}&json=1`;
 
     for (let i = 0; i < 24; i++) {
@@ -58,9 +51,8 @@ module.exports = async (req, res) => {
       const resultRes = await fetch(resultUrl);
       const resultData = await resultRes.json();
 
-      if (resultData.status === 1) {
+      if (resultData.status === 1)
         return res.status(200).json({ token: resultData.request });
-      }
 
       if (resultData.request !== "CAPCHA_NOT_READY") {
         return res.status(500).json({ error: resultData.request });
